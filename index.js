@@ -18,8 +18,6 @@ const client = new Client({
   partials: [Partials.Channel]
 });
  // auto ⚡ Spark & init data
-console.log("TOKEN:", process.env.TOKEN);
-
 client.once("ready", async () => {
   console.log(`✅ Online sebagai ${client.user.tag}`);
 
@@ -214,5 +212,6 @@ async function levelUp(member, level) {
 /* ===============================
    LOGIN
 ================================ */
+console.log("TOKEN:", process.env.TOKEN);
 client.login(process.env.TOKEN);
 
