@@ -212,6 +212,6 @@ async function levelUp(member, level) {
 /* ===============================
    LOGIN
 ================================ */
-console.log("TOKEN:", process.env.TOKEN);
+console.log("TOKEN VALUE:", process.env.TOKEN);
 client.login(process.env.TOKEN);
 
