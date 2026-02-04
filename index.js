@@ -16,7 +16,7 @@ const client = new Client({
   ],
   partials: [Partials.Channel]
 });
- // auto spark & init data
+ // auto ⚡ Spark & init data
 client.once("ready", async () => {
   console.log(`✅ Online sebagai ${client.user.tag}`);
 
@@ -25,7 +25,7 @@ client.once("ready", async () => {
 
   await guild.members.fetch();
 
-  const sparkRole = guild.roles.cache.find(r => r.name === "Spark");
+  const sparkRole = guild.roles.cache.find(r => r.name === "⚡ Spark");
   if (!sparkRole) {
     console.log("❌ Role Spark tidak ditemukan");
     return;
@@ -39,7 +39,7 @@ client.once("ready", async () => {
       users[member.id] = { exp: 0, level: 1 };
     }
 
-    // kasih role spark
+    // kasih role ⚡ Spark
     if (!member.roles.cache.has(sparkRole.id)) {
       member.roles.add(sparkRole).catch(() => {});
     }
@@ -111,7 +111,7 @@ client.on("guildMemberAdd", async member => {
   users[member.id] = { exp: 0, level: 1 };
   saveDB();
 
-  const role = member.guild.roles.cache.find(r => r.name === "Spark");
+  const role = member.guild.roles.cache.find(r => r.name === "⚡ Spark");
   if (role) await member.roles.add(role).catch(() => {});
 });
 
@@ -212,3 +212,4 @@ async function levelUp(member, level) {
    LOGIN
 ================================ */
 client.login(process.env.TOKEN);
+
