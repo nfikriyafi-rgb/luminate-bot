@@ -56,6 +56,8 @@ module.exports = {
     // Channel tempat pesan level-up dikirim
     // Kosongkan ('') untuk kirim ke channel yang sama dengan chat
     levelUpChannelId: '',
+
+     announcementChannelId:  '1433455163498303632', // Channel untuk pengumuman EXP & aturan
   },
 
   // ─── ROLE SETTINGS ───────────────────────────────────────
