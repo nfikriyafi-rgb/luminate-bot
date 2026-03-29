@@ -47,7 +47,7 @@ const games = [
     id:          'withdraw',
     emoji:       '🎮',
     name:        'Withdraw (Mini-game)',
-    description: 'Jawab soal dan dapatkan Lumens! Ada 3 tipe soal: Matematika, Tebak Kata, dan Trivia.',
+    description: 'Jawab soal random dan dapatkan Lumens! Ada 3 tipe soal: Matematika, Tebak Kata, dan Trivia.',
     commands: [
       { cmd: `${p}withdraw`, desc: 'Mulai mini-game untuk dapat Lumens (cooldown 2 menit)' },
     ],
@@ -70,10 +70,64 @@ const games = [
       '• 🧠 Trivia → **25–55 Lumens**',
     ],
   },
+  {
+    id:          'rpg',
+    emoji:       '⚔️',
+    name:        'Luminate RPG',
+    description: 'Game RPG lengkap! Lawan monster, kumpulkan item langka, naik level, dan jadi yang terkuat di server!',
+    commands: [
+      { cmd: `${p}profile`,         desc: 'Lihat stats & equipment karaktermu' },
+      { cmd: `${p}fight`,           desc: 'Lawan monster & dapatkan item + Lumens (cooldown 30 detik)' },
+      { cmd: `${p}inventory`,       desc: 'Lihat semua item di inventory' },
+      { cmd: `${p}equip <item_id>`, desc: 'Pasang weapon/armor/accessory' },
+      { cmd: `${p}use <item_id>`,   desc: 'Pakai potion atau consumable' },
+      { cmd: `${p}sell <item_id>`,  desc: 'Jual item → dapat Lumens' },
+      { cmd: `${p}heal`,            desc: 'Bayar Lumens untuk pulihkan HP penuh' },
+      { cmd: `${p}travel`,          desc: 'Lihat & pindah ke area berbeda' },
+      { cmd: `${p}shop`,            desc: 'Beli item dengan Lumens' },
+    ],
+    aliases: [`${p}char`, `${p}hero`, `${p}inv`, `${p}bag`],
+    rules: [
+      '1️⃣ Mulai dengan ketik `!profile` untuk lihat stats awal karaktermu.',
+      '2️⃣ Ketik `!fight` untuk lawan monster di areamu sekarang.',
+      '3️⃣ Menang → dapat **EXP RPG**, **Lumens ✨**, dan kemungkinan **drop item**.',
+      '4️⃣ Kalah → HP dipulihkan ke 30%, bisa langsung lawan lagi!',
+      '',
+      '**🗺️ Area System:**',
+      '• 🌲 Forest → Min Lv.1 (awal semua player)',
+      '• 🏔️ Mountain → Min Lv.3',
+      '• 🏰 Dungeon → Min Lv.5',
+      '• 🔥 Volcano → Min Lv.8',
+      '• 🌌 End Realm → Min Lv.10',
+      'Ketik `!travel` untuk pindah area. Area lebih sulit = reward lebih besar!',
+      '',
+      '**🎒 Item & Equipment:**',
+      '• Item didapat dari drop monster atau beli di `!shop`',
+      '• Pasang item dengan `!equip <id>` untuk boost stats',
+      '• Jual item yang tidak diperlukan dengan `!sell <id>`',
+      '• Pakai potion dengan `!use <id>` saat HP menipis',
+      '',
+      '**⚔️ Rarity Item (dari terendah ke tertinggi):**',
+      '⚪ Common → 🟢 Uncommon → 🔵 Rare → 🟣 Epic → 🟡 Legendary → 🔴 Mythic',
+      'Semakin tinggi Luck, semakin besar chance dapat item langka!',
+      '',
+      '**⚔️ Battle System:**',
+      '• Damage = ATK (80–120%) dikurangi DEF monster',
+      '• 🎯 Crit → damage x2',
+      '• 💨 Dodge → hindari serangan monster',
+      '• 🩸 Lifesteal → pulihkan HP dari damage yang diberikan',
+      '• Cooldown fight: **30 detik**',
+      '',
+      '**💰 Ekonomi RPG:**',
+      '• Semua transaksi pakai **Lumens ✨**',
+      '• Jual item → 60% dari harga asli',
+      '• Heal HP → 0.5 Lumens per HP',
+    ],
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────
-//  HANDLE SYSTEM (dipakai juga oleh !system command)
+//  HANDLE SYSTEM
 // ─────────────────────────────────────────────────────────────
 
 function handleSystem(message, gameName) {
@@ -130,18 +184,14 @@ module.exports = {
   execute(message, args) {
     const sub = (args[0] || '').toLowerCase();
 
-    // !game system <nama> → tampilkan aturan
     if (sub === 'system') {
       return handleSystem(message, (args[1] || '').toLowerCase() || null);
     }
 
-    // !game → daftar semua game
     const embed = new EmbedBuilder()
       .setColor(0x5865f2)
       .setTitle('🎮 Daftar Game yang Tersedia')
-      .setDescription(
-        `Ketik \`${p}system <nama game>\` untuk melihat aturan lengkap.\n\u200B`
-      )
+      .setDescription(`Ketik \`${p}system <nama game>\` untuk melihat aturan lengkap.\n\u200B`)
       .setFooter({ text: `${message.guild.name} • Luminate Bot` })
       .setTimestamp();
 
