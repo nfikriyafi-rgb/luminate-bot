@@ -20,7 +20,7 @@ const GAME_CHANNEL_MAP = {
   withdraw: 'withdraw', wd: 'withdraw', kerja: 'withdraw',
   gamble: 'gambling', gambling: 'gambling', bet: 'gambling',
   fight: 'rpg', battle: 'rpg', hunt: 'rpg',
-  adventure: 'rpg',
+  adventure: 'rpg', adv: 'rpg', explore: 'rpg',
   profile: 'rpg', char: 'rpg', stats: 'rpg', hero: 'rpg',
   inventory: 'rpg', inv: 'rpg', bag: 'rpg',
   equip: 'rpg', use: 'rpg', sell: 'rpg',
@@ -46,6 +46,13 @@ module.exports = {
         // Cek game channel restriction
         const gameKey = GAME_CHANNEL_MAP[commandName];
         if (gameKey && !checkGameChannel(message, gameKey)) return;
+
+        // Handle adventure recall
+        if (commandName === 'adventure' && args[0]?.toLowerCase() === 'recall') {
+          const advCmd = client.commands.get('adventure');
+          if (advCmd?.handleRecall) await advCmd.handleRecall(message, client);
+          return;
+        }
 
         try {
           await command.execute(message, args, client);
