@@ -1,8 +1,9 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
-const fs   = require('fs');
-const path = require('path');
-const config = require('./config');
+const fs          = require('fs');
+const path        = require('path');
+const config      = require('./config');
+const { startStatsRefresh } = require('./utils/serverstats');
 
 const client = new Client({
   intents: [
@@ -55,3 +56,6 @@ if (fs.existsSync(eventsPath)) {
 }
 
 client.login(config.token);
+
+// Start server stats refresh setelah bot ready
+client.once('ready', () => startStatsRefresh(client));
