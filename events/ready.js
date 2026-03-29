@@ -5,7 +5,7 @@ module.exports = {
   once: true,
   async execute(client) {
     console.log(`✅ Luminate Bot online sebagai ${client.user.tag}`);
-    client.user.setActivity('🌟 Luminate Leveling', { type: 3 });
+    client.user.setActivity('Powered by Dhif', { type: 3 }); // WATCHING
  
     // ─── Scan semua user yang sudah di VC sebelum bot nyala ──
     let recovered = 0;
