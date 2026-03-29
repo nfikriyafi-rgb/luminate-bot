@@ -50,14 +50,22 @@ module.exports = {
   // ─── CHANNEL SETTINGS ────────────────────────────────────
   channels: {
     // Channel ID yang TIDAK memberikan EXP (spam/bot/AFK)
-    // Contoh: ['123456789', '987654321']
     ignoredChannelIds: [],
 
     // Channel tempat pesan level-up dikirim
-    // Kosongkan ('') untuk kirim ke channel yang sama dengan chat
     levelUpChannelId: '',
 
-     announcementChannelId:  '1433455163498303632', // Channel untuk pengumuman EXP & aturan
+    // Channel announcement
+    announcementChannelId: '',
+
+    // Channel khusus per game (isi dengan ID channel)
+    // Game HANYA bisa dimainkan di channel ini
+    gameChannels: {
+      wordchain: '1486793057083854898', // ← ID channel word chain
+      withdraw:  '1487535038630199306', // ← ID channel withdraw/mini-game
+      gambling:  '', // ← ID channel gambling
+      rpg:       '1487535627749691472', // ← ID channel RPG (fight, adventure, dll)
+    },
   },
 
   // ─── ROLE SETTINGS ───────────────────────────────────────
@@ -67,7 +75,7 @@ module.exports = {
     boosterRoleIds: [],
 
     // Jika true, role level lama akan dilepas saat naik level
-    removeOldLevelRoles: false,
+    removeOldLevelRoles: true,
   },
 
   // ─── DATABASE ────────────────────────────────────────────

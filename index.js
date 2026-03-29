@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
-const fs = require('fs');
+const fs   = require('fs');
 const path = require('path');
 const config = require('./config');
 
@@ -17,12 +17,27 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// Load commands
+// Load commands (single-export files)
 const commandsPath = path.join(__dirname, 'commands');
 if (fs.existsSync(commandsPath)) {
   for (const file of fs.readdirSync(commandsPath).filter(f => f.endsWith('.js'))) {
-    const command = require(path.join(commandsPath, file));
-    if (command.name) client.commands.set(command.name, command);
+    const mod = require(path.join(commandsPath, file));
+
+    // Single command export (name ada di root)
+    if (mod.name) {
+      client.commands.set(mod.name, mod);
+      if (mod.aliases) mod.aliases.forEach(a => client.commands.set(a.replace(/^!/, ''), mod));
+    }
+
+    // Multi-command export (rpgtools.js dll) — object of commands
+    if (!mod.name && typeof mod === 'object') {
+      for (const cmd of Object.values(mod)) {
+        if (cmd && cmd.name) {
+          client.commands.set(cmd.name, cmd);
+          if (cmd.aliases) cmd.aliases.forEach(a => client.commands.set(a.replace(/^!/, ''), cmd));
+        }
+      }
+    }
   }
 }
 

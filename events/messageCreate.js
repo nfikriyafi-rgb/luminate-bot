@@ -2,6 +2,32 @@ const leveling  = require('../utils/leveling');
 const currency  = require('../utils/currency');
 const config    = require('../config');
 
+// ─── Cek apakah command boleh dipakai di channel ini ─────────
+function checkGameChannel(message, gameKey) {
+  const channelId = config.channels.gameChannels?.[gameKey];
+  if (!channelId) return true; // belum diset = bebas dimana saja
+  if (message.channel.id === channelId) return true;
+
+  const channel = message.client.channels.cache.get(channelId);
+  const mention = channel ? `<#${channelId}>` : `channel game`;
+  message.reply(`❌ Command ini hanya bisa digunakan di ${mention}!`).catch(() => {});
+  return false;
+}
+
+// ─── Map command ke game channel key ─────────────────────────
+const GAME_CHANNEL_MAP = {
+  wordchain: 'wordchain', wc: 'wordchain', sambungkata: 'wordchain',
+  withdraw: 'withdraw', wd: 'withdraw', kerja: 'withdraw',
+  gamble: 'gambling', gambling: 'gambling', bet: 'gambling',
+  fight: 'rpg', battle: 'rpg', hunt: 'rpg',
+  adventure: 'rpg',
+  profile: 'rpg', char: 'rpg', stats: 'rpg', hero: 'rpg',
+  inventory: 'rpg', inv: 'rpg', bag: 'rpg',
+  equip: 'rpg', use: 'rpg', sell: 'rpg',
+  heal: 'rpg', travel: 'rpg', goto: 'rpg', area: 'rpg',
+  shop: 'rpg', store: 'rpg', toko: 'rpg',
+};
+
 module.exports = {
   name: 'messageCreate',
   async execute(message, client) {
@@ -12,10 +38,15 @@ module.exports = {
     if (message.content.startsWith(config.prefix)) {
       const args        = message.content.slice(config.prefix.length).trim().split(/\s+/);
       const commandName = args.shift().toLowerCase();
-      const command     = client.commands.get(commandName) ||
+
+      const command = client.commands.get(commandName) ||
         client.commands.find(c => c.aliases && c.aliases.includes(commandName));
 
       if (command) {
+        // Cek game channel restriction
+        const gameKey = GAME_CHANNEL_MAP[commandName];
+        if (gameKey && !checkGameChannel(message, gameKey)) return;
+
         try {
           await command.execute(message, args, client);
         } catch (err) {
@@ -36,7 +67,11 @@ module.exports = {
     // ─── Word Chain: proses kata biasa ────────────────────
     const wordchain = client.commands.get('wordchain');
     if (wordchain) {
-      await wordchain.handleMessage(message, client);
+      // Word chain hanya di channel wordchain
+      const wcChannelId = config.channels.gameChannels?.wordchain;
+      if (!wcChannelId || message.channel.id === wcChannelId) {
+        await wordchain.handleMessage(message, client);
+      }
     }
 
     // ─── EXP & Lumens dari Chat ───────────────────────────
@@ -49,11 +84,9 @@ module.exports = {
     const member = message.member;
     if (!member) return;
 
-    // EXP
     const result = await leveling.addExp(message.author.id, member, config.chat.expPerMessage);
     if (result.leveled) await leveling.sendLevelUpMessage(client, message, result);
 
-    // Lumens +1 per pesan
     currency.addLumens(message.author.id, 1);
   },
 };
