@@ -174,43 +174,55 @@ const sellCmd = {
   },
 };
 
-// ── HEAL ──────────────────────────────────────────────────────
+// ── HEAL (Passive Regen + Manual) ────────────────────────────
+const REGEN_AMOUNT   = 5;   // HP per tick
+const REGEN_INTERVAL = 30;  // detik per tick
+
+// Jalankan regen otomatis saat module dimuat
+setInterval(() => {
+  const db = require('../utils/database');
+  const all = db.getAllUsers();
+  for (const [userId, data] of Object.entries(all)) {
+    if (!data.rpg) continue;
+    const rpg    = data.rpg;
+    const stats  = rpgUtils.calcStats(rpg);
+    if (rpg.hp >= stats.maxHp) continue;
+    rpg.hp = Math.min(rpg.hp + REGEN_AMOUNT, stats.maxHp);
+    data.rpg = rpg;
+    db.saveUser(userId, data);
+  }
+}, REGEN_INTERVAL * 1000);
+
 const healCmd = {
   name: 'heal',
-  description: 'Bayar Lumens untuk pulihkan HP',
+  description: 'Cek HP & status regen kamu',
 
   execute(message, args) {
     const playerRPG = rpgUtils.getPlayerRPG(message.author.id);
     const stats     = rpgUtils.calcStats(playerRPG);
 
-    if (playerRPG.hp >= stats.maxHp) {
-      return message.reply('❤️ HP kamu sudah penuh!');
-    }
-
-    const missing   = stats.maxHp - playerRPG.hp;
-    const cost      = Math.ceil(missing * 0.5); // 0.5 Lumens per HP
-    const balance   = currency.getBalance(message.author.id);
-
-    if (balance < cost) {
-      return message.reply(
-        `❌ Lumens tidak cukup!\n` +
-        `HP missing: **${missing}** | Biaya: ✨ **${cost} Lumens**\n` +
-        `Saldo kamu: ✨ **${balance} Lumens**`
-      );
-    }
-
-    currency.removeLumens(message.author.id, cost);
-    playerRPG.hp = stats.maxHp;
-    rpgUtils.savePlayerRPG(message.author.id, playerRPG);
+    const hpPct  = Math.floor((playerRPG.hp / stats.maxHp) * 10);
+    const hpBar  = '█'.repeat(hpPct) + '░'.repeat(10 - hpPct);
+    const isFull = playerRPG.hp >= stats.maxHp;
 
     const embed = new EmbedBuilder()
-      .setColor(0x57f287)
-      .setTitle('❤️ HP Dipulihkan!')
+      .setColor(isFull ? 0x57f287 : 0xed4245)
+      .setTitle('❤️ Status HP')
       .addFields(
-        { name: 'HP',         value: `**${stats.maxHp}/${stats.maxHp}** (Full!)`,     inline: true },
-        { name: 'Biaya',      value: `✨ **-${cost} Lumens**`,                        inline: true },
-        { name: 'Sisa Saldo', value: `✨ **${currency.getBalance(message.author.id)} Lumens**`, inline: false },
-      );
+        {
+          name:  'HP',
+          value: `\`${hpBar}\` **${playerRPG.hp}/${stats.maxHp}**`,
+          inline: false,
+        },
+        {
+          name:  '🔄 Passive Regen',
+          value: isFull
+            ? '✅ HP sudah penuh!'
+            : `+**${REGEN_AMOUNT} HP** setiap **${REGEN_INTERVAL} detik** secara otomatis`,
+          inline: false,
+        },
+      )
+      .setFooter({ text: 'HP regen berjalan otomatis di background' });
 
     message.reply({ embeds: [embed] });
   },
