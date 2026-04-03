@@ -81,7 +81,7 @@ async function handleRemoveExp(message, args) {
   if (before === 0)
     return message.reply(`❌ **${target.displayName}** sudah memiliki 0 EXP.`);
 
-  const result       = await leveling.removeExp(target.id, target, amount);
+  const result        = await leveling.removeExp(target.id, target, amount);
   const actualRemoved = before - result.userData.exp;
 
   const embed = new EmbedBuilder()
@@ -195,13 +195,65 @@ async function handleSyncRoles(message) {
     .setTitle('🔁 Role Disinkronkan')
     .setDescription(`Role **${target.displayName}** telah disinkronkan ulang sesuai EXP.`)
     .addFields(
-      { name: 'Level', value: `Lv.**${lvlData.level}** — ${lvlData.name}`,  inline: true },
-      { name: 'EXP',   value: `**${db.getUser(target.id).exp}** EXP`,       inline: true },
+      { name: 'Level', value: `Lv.**${lvlData.level}** — ${lvlData.name}`, inline: true },
+      { name: 'EXP',   value: `**${db.getUser(target.id).exp}** EXP`,      inline: true },
     )
     .setFooter({ text: `Admin: ${message.author.tag}` })
     .setTimestamp();
 
   message.reply({ embeds: [embed] });
+}
+
+async function handleSyncRolesAll(message) {
+  await message.reply('⏳ Menyinkronkan semua role member, mohon tunggu...');
+
+  const allUsers = db.getAllUsers();
+  const userIds  = Object.keys(allUsers);
+  if (userIds.length === 0) return message.channel.send('📭 Tidak ada data user.');
+
+  let success = 0, failed = 0, skipped = 0;
+
+  for (const userId of userIds) {
+    try {
+      const member = await message.guild.members.fetch(userId).catch(() => null);
+      if (!member) { skipped++; continue; }
+
+      const userData = db.getUser(userId);
+      const lvlData  = leveling.getLevelFromExp(userData.exp || 0);
+      userData.level = lvlData.level;
+      db.saveUser(userId, userData);
+
+      // Lepas semua role level lama
+      const allRoleNames  = config.levels.map(l => l.name);
+      const rolesToRemove = member.roles.cache.filter(r => allRoleNames.includes(r.name));
+      for (const [, role] of rolesToRemove) {
+        await member.roles.remove(role).catch(() => {});
+      }
+
+      // Pasang role level yang benar
+      const correctRole = message.guild.roles.cache.find(r => r.name === lvlData.name);
+      if (correctRole) await member.roles.add(correctRole).catch(() => {});
+
+      success++;
+    } catch (err) {
+      console.error(`[Luminate] Gagal sync user ${userId}:`, err);
+      failed++;
+    }
+  }
+
+  const embed = new EmbedBuilder()
+    .setColor(0x5865f2)
+    .setTitle('🔁 Sync Semua Role Selesai')
+    .setDescription('Semua role member telah disinkronkan ulang sesuai EXP masing-masing.')
+    .addFields(
+      { name: 'Berhasil', value: `${success} member`,                           inline: true },
+      { name: 'Dilewati', value: `${skipped} member (sudah keluar server)`,     inline: true },
+      { name: 'Gagal',    value: `${failed} member`,                            inline: true },
+    )
+    .setFooter({ text: `Admin: ${message.author.tag}` })
+    .setTimestamp();
+
+  message.channel.send({ embeds: [embed] });
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -223,8 +275,8 @@ function handleAddLumens(message, args) {
     .setTitle('✅ Lumens Ditambahkan')
     .setThumbnail(target.user.displayAvatarURL({ dynamic: true }))
     .addFields(
-      { name: 'User',           value: target.displayName,           inline: true  },
-      { name: 'Ditambah',       value: `+**${amount}** ✨ Lumens`,   inline: true  },
+      { name: 'User',           value: target.displayName,            inline: true  },
+      { name: 'Ditambah',       value: `+**${amount}** ✨ Lumens`,    inline: true  },
       { name: 'Saldo Sekarang', value: `**${newBalance}** ✨ Lumens`, inline: false },
     )
     .setFooter({ text: `Admin: ${message.author.tag}` })
@@ -252,9 +304,9 @@ function handleRemoveLumens(message, args) {
     .setTitle('➖ Lumens Dikurangi')
     .setThumbnail(target.user.displayAvatarURL({ dynamic: true }))
     .addFields(
-      { name: 'User',           value: target.displayName,          inline: true  },
-      { name: 'Dikurangi',      value: `-**${amount}** ✨ Lumens`,  inline: true  },
-      { name: 'Saldo Sekarang', value: `**${result}** ✨ Lumens`,   inline: false },
+      { name: 'User',           value: target.displayName,         inline: true  },
+      { name: 'Dikurangi',      value: `-**${amount}** ✨ Lumens`, inline: true  },
+      { name: 'Saldo Sekarang', value: `**${result}** ✨ Lumens`,  inline: false },
     )
     .setFooter({ text: `Admin: ${message.author.tag}` })
     .setTimestamp();
@@ -296,23 +348,21 @@ function sendHelp(message) {
     .setTitle('⚙️ Admin Commands — Luminate')
     .setDescription('Semua command di bawah hanya untuk **Administrator**.\n\u200B')
     .addFields(
-      // EXP
       { name: '📊 EXP Management', value: '\u200B', inline: false },
-      { name: '`!admin addexp @user <jumlah> [tipe]`',  value: 'Tambah EXP ke user. Role naik & notif DM otomatis.',         inline: false },
-      { name: '`!admin removeexp @user <jumlah>`',      value: 'Kurangi EXP dari user. Role turun otomatis jika perlu.',     inline: false },
-      { name: '`!admin resetexp @user RESET`',          value: 'Reset EXP & level user ke 0. Konfirmasi dengan `RESET`.',    inline: false },
-      { name: '`!admin resetall RESETALL`',             value: 'Reset EXP & level **semua member**. Konfirmasi `RESETALL`.', inline: false },
-      { name: '`!admin syncroles @user`',               value: 'Sinkron ulang role Discord sesuai EXP saat ini.',           inline: false },
-      // Lumens
+      { name: '`!admin addexp @user <jumlah> [tipe]`',  value: 'Tambah EXP ke user. Role naik & notif DM otomatis.',          inline: false },
+      { name: '`!admin removeexp @user <jumlah>`',      value: 'Kurangi EXP dari user. Role turun otomatis jika perlu.',      inline: false },
+      { name: '`!admin resetexp @user RESET`',          value: 'Reset EXP & level user ke 0. Konfirmasi dengan `RESET`.',     inline: false },
+      { name: '`!admin resetall RESETALL`',             value: 'Reset EXP & level **semua member**. Konfirmasi `RESETALL`.',  inline: false },
+      { name: '`!admin syncroles @user`',               value: 'Sinkron ulang role 1 user sesuai EXP saat ini.',              inline: false },
+      { name: '`!admin syncrolesall`',                  value: 'Sinkron ulang role **semua member** sesuai EXP masing-masing. Role lama dilepas, role yang benar dipasang.', inline: false },
       { name: '\u200B', value: '\u200B', inline: false },
       { name: '✨ Lumens Management', value: '\u200B', inline: false },
-      { name: '`!admin addlumens @user <jumlah>`',      value: 'Tambah Lumens ke user.',                                    inline: false },
-      { name: '`!admin removelumens @user <jumlah>`',   value: 'Kurangi Lumens dari user.',                                 inline: false },
-      { name: '`!admin resetlumens @user RESET`',       value: 'Reset semua Lumens user ke 0. Konfirmasi dengan `RESET`.',  inline: false },
-      // Lainnya
+      { name: '`!admin addlumens @user <jumlah>`',      value: 'Tambah Lumens ke user.',                                     inline: false },
+      { name: '`!admin removelumens @user <jumlah>`',   value: 'Kurangi Lumens dari user.',                                  inline: false },
+      { name: '`!admin resetlumens @user RESET`',       value: 'Reset semua Lumens user ke 0. Konfirmasi dengan `RESET`.',   inline: false },
       { name: '\u200B', value: '\u200B', inline: false },
       { name: '📣 Lainnya', value: '\u200B', inline: false },
-      { name: '`!announce [#channel]`',                 value: 'Kirim embed announcement ke channel tertentu.',             inline: false },
+      { name: '`!announce [#channel]`',                 value: 'Kirim embed announcement ke channel tertentu.',              inline: false },
     )
     .setFooter({ text: 'Luminate Bot • Admin Panel' });
 
@@ -340,6 +390,7 @@ module.exports = {
       case 'resetexp':     return handleResetExp(message, args);
       case 'resetall':     return handleResetAll(message, args);
       case 'syncroles':    return handleSyncRoles(message);
+      case 'syncrolesall': return handleSyncRolesAll(message);
       case 'addlumens':    return handleAddLumens(message, args);
       case 'removelumens': return handleRemoveLumens(message, args);
       case 'resetlumens':  return handleResetLumens(message, args);
