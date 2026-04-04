@@ -1,25 +1,32 @@
 const { startVoiceTracking } = require('../utils/voiceTracker');
- 
+const { ActivityType }       = require('discord.js');
+
 module.exports = {
   name: 'ready',
   once: true,
   async execute(client) {
     console.log(`✅ Luminate Bot online sebagai ${client.user.tag}`);
-   client.user.setActivity('Powered by Dhif', { type: 3 });
-client.user.setStatus('dnd');
- 
-    // ─── Scan semua user yang sudah di VC sebelum bot nyala ──
+
+    client.user.setPresence({
+      status: 'dnd',
+      activities: [{
+        name: 'Powered by Dhif',
+        type: ActivityType.Watching,
+      }],
+    });
+
+    // ─── Scan user yang sudah di VC sebelum bot nyala ────────
     let recovered = 0;
     for (const [, guild] of client.guilds.cache) {
       await guild.members.fetch();
       for (const [, voiceState] of guild.voiceStates.cache) {
         if (!voiceState.channelId) continue;
         if (voiceState.member?.user.bot) continue;
- 
+
         const isMuted = voiceState.selfMute || voiceState.serverMute;
         const isDeaf  = voiceState.selfDeaf  || voiceState.serverDeaf;
         if (isMuted || isDeaf) continue;
- 
+
         startVoiceTracking(voiceState.id, voiceState.member, voiceState, client);
         recovered++;
       }
@@ -29,4 +36,3 @@ client.user.setStatus('dnd');
     }
   },
 };
- 
