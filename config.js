@@ -65,12 +65,13 @@ module.exports = {
       withdraw:  '1487535038630199306', // ← ID channel withdraw/mini-game
       gambling:  '', // ← ID channel gambling
       rpg:       '1487535627749691472', // ← ID channel RPG (fight, adventure, dll)
+      fishing:   '1490036678759551206', // ← ID channel fishing (mancing)
     },
 
     // ─── SERVER STATS ─────────────────────────────────────
     // ID Category khusus untuk voice channel server stats
     // Buat category baru di Discord → klik kanan → Copy ID → paste di sini
-    statsCategory: '1468779291306102835', // ← ID category "📊 SERVER STATS"
+    statsCategory: '', // ← ID category "📊 SERVER STATS"
 
     // ID voice channel stats (diisi otomatis saat bot pertama jalan)
     // Bisa juga diisi manual jika channel sudah ada

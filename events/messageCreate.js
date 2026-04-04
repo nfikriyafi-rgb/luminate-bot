@@ -20,6 +20,8 @@ const GAME_CHANNEL_MAP = {
   withdraw: 'withdraw', wd: 'withdraw', kerja: 'withdraw',
   gamble: 'gambling', gambling: 'gambling', bet: 'gambling',
   fight: 'rpg', battle: 'rpg', hunt: 'rpg',
+  fish: 'fishing', mancing: 'fishing', fishing: 'fishing',
+  fishop: 'fishing', fishingshop: 'fishing', rodshop: 'fishing',
   adventure: 'rpg', adv: 'rpg', explore: 'rpg',
   profile: 'rpg', char: 'rpg', stats: 'rpg', hero: 'rpg',
   inventory: 'rpg', inv: 'rpg', bag: 'rpg',
