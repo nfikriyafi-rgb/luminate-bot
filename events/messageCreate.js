@@ -40,6 +40,21 @@ module.exports = {
   name: 'messageCreate',
   async execute(message, client) {
     if (message.author.bot) return;
+
+// ─── MAINTENANCE MODE ────────────────────────────────────────
+if (config.maintenance && message.content.startsWith(config.prefix)) {
+  const args        = message.content.slice(config.prefix.length).trim().split(/\s+/);
+  const commandName = args[0]?.toLowerCase();
+
+  // Command yang tetap bisa dipakai admin walau maintenance
+  const adminBypass = new Set(['admin', 'announce']);
+  if (!adminBypass.has(commandName) || !message.member.permissions.has('Administrator')) {
+    if (!message.member.permissions.has('Administrator')) {
+      return message.reply(config.maintenanceMessage).catch(() => {});
+    }
+  }
+}
+
     if (!message.guild) return;
 
     // ─── Handle prefix commands ───────────────────────────

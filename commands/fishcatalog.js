@@ -1,214 +1,86 @@
-const { EmbedBuilder } = require('discord.js');
-const fishDb = require('../utils/fishingItems');
-const config = require('../config');
+const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const fishDb     = require('../utils/fishingItems');
+const fishCanvas = require('../utils/fishingCanvas');
+const config     = require('../config');
 
 const p = config.prefix;
-
-// ─── Gambar per rarity (URL gambar publik) ────────────────────
-const RARITY_IMAGES = {
-  COMMON:    'https://i.imgur.com/8mQKGvM.png', // abu-abu
-  UNCOMMON:  'https://i.imgur.com/4gDnFO8.png', // hijau
-  RARE:      'https://i.imgur.com/3wYYrP4.png', // biru
-  EPIC:      'https://i.imgur.com/9hQKJ3L.png', // ungu
-  LEGENDARY: 'https://i.imgur.com/7mNKL2P.png', // kuning
-  MYTHIC:    'https://i.imgur.com/5pQLM8N.png', // merah
-};
-
-// ─── Gambar spesifik per item ─────────────────────────────────
-const ITEM_IMAGES = {
-  // ROD IMAGES (fishing rod themed)
-  rod_001: 'https://i.imgur.com/BasicRod.png',
-  rod_011: 'https://i.imgur.com/PoseidonRod.png',
-  rod_012: 'https://i.imgur.com/VoidRod.png',
-
-  // FISH IMAGES (pakai emoji besar + warna rarity)
-  fish_021: 'https://i.imgur.com/CelestialWhale.png',
-  fish_024: 'https://i.imgur.com/GodOfTides.png',
-};
-
-// ─── Emoji visual per kategori ────────────────────────────────
-const ROD_VISUAL = {
-  COMMON:    '🎣',
-  UNCOMMON:  '🎣',
-  RARE:      '🎣',
-  EPIC:      '🎣',
-  LEGENDARY: '🎣',
-  MYTHIC:    '🎣',
-};
-
-const FISH_VISUAL = {
-  COMMON:    '🐟',
-  UNCOMMON:  '🐠',
-  RARE:      '🐡',
-  EPIC:      '🦈',
-  LEGENDARY: '🐉',
-  MYTHIC:    '🌌',
-};
-
-const BAIT_VISUAL = {
-  COMMON:    '🪱',
-  UNCOMMON:  '🦗',
-  RARE:      '✨',
-  EPIC:      '💛',
-  LEGENDARY: '🔥',
-  MYTHIC:    '🌀',
-};
 
 module.exports = {
   name: 'fishcatalog',
   aliases: ['fishcat', 'fishlist', 'rodlist', 'baitlist'],
   description: 'Lihat katalog visual semua ikan, rod, dan bait',
 
-  execute(message, args) {
-    const sub = (args[0] || '').toLowerCase();
+  async execute(message, args) {
+    const sub    = (args[0] || '').toLowerCase();
+    const filter = (args[1] || '').toUpperCase();
 
-    if (sub === 'fish' || sub === 'ikan' || !sub) return showFish(message, args[1]);
-    if (sub === 'rod'  || sub === 'rods')          return showRods(message, args[1]);
-    if (sub === 'bait' || sub === 'baits')          return showBaits(message, args[1]);
+    if (!sub) return showMenu(message);
+    if (sub === 'fish' || sub === 'ikan') return showCategory(message, 'fish',  filter);
+    if (sub === 'rod'  || sub === 'rods') return showCategory(message, 'rod',   filter);
+    if (sub === 'bait' || sub === 'baits')return showCategory(message, 'bait',  filter);
 
-    // Default: menu
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle('📖 Fishing Catalog')
-      .setDescription('Lihat semua item fishing dengan visual lengkap!\n\u200B')
-      .addFields(
-        { name: `\`${p}fishcatalog fish\``,         value: 'Lihat semua ikan beserta rarity & harganya',  inline: false },
-        { name: `\`${p}fishcatalog fish mythic\``,   value: 'Filter ikan berdasarkan rarity',             inline: false },
-        { name: `\`${p}fishcatalog rod\``,           value: 'Lihat semua rod beserta stats',              inline: false },
-        { name: `\`${p}fishcatalog bait\``,          value: 'Lihat semua bait beserta stats',             inline: false },
-      )
-      .setFooter({ text: 'Rarity: common | uncommon | rare | epic | legendary | mythic' });
-
-    message.reply({ embeds: [embed] });
+    return showMenu(message);
   },
 };
 
-// ─── SHOW FISH ────────────────────────────────────────────────
-function showFish(message, rarityFilter) {
-  const filter    = rarityFilter?.toUpperCase();
-  const rarityOrder = ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC'];
-  const filtered  = filter ? rarityOrder.filter(r => r === filter) : rarityOrder;
+// ─── Menu utama ───────────────────────────────────────────────
+function showMenu(message) {
+  const embed = new EmbedBuilder()
+    .setColor(0x5865f2)
+    .setTitle('📖 Fishing Catalog')
+    .setDescription('Lihat semua item fishing dengan kartu visual!\n\u200B')
+    .addFields(
+      { name: `\`${p}fishcatalog fish\``,          value: 'Lihat semua ikan (per rarity)',     inline: false },
+      { name: `\`${p}fishcatalog fish mythic\``,    value: 'Filter ikan rarity tertentu',       inline: false },
+      { name: `\`${p}fishcatalog rod\``,            value: 'Lihat semua rod',                   inline: false },
+      { name: `\`${p}fishcatalog rod legendary\``,  value: 'Filter rod rarity tertentu',        inline: false },
+      { name: `\`${p}fishcatalog bait\``,           value: 'Lihat semua bait',                  inline: false },
+    )
+    .setFooter({ text: 'Rarity: common | uncommon | rare | epic | legendary | mythic' });
 
-  if (filtered.length === 0) {
-    return message.reply(`❌ Rarity tidak valid. Pilih: common, uncommon, rare, epic, legendary, mythic`);
-  }
-
-  for (const rarity of filtered) {
-    const fishList = fishDb.FISH.filter(f => f.rarity === rarity);
-    if (fishList.length === 0) continue;
-
-    const r       = fishDb.RARITY[rarity];
-    const visual  = FISH_VISUAL[rarity] || '🐟';
-
-    const lines = fishList.map(fish => {
-      const priceMin = fishDb.calcFishPrice(fish, fish.weightMin);
-      const priceMax = fishDb.calcFishPrice(fish, fish.weightMax);
-      return (
-        `${visual} **${fish.name}**\n` +
-        `⚖️ Berat: ${fish.weightMin}–${fish.weightMax} kg\n` +
-        `✨ Harga: ${priceMin}–${priceMax} Lumens\n` +
-        `🎯 Chance: ${r.dropChance}%`
-      );
-    }).join('\n\n');
-
-    const embed = new EmbedBuilder()
-      .setColor(r.color)
-      .setTitle(`${r.emoji} ${r.name} Fish`)
-      .setDescription(lines)
-      .setThumbnail(getThumbnail('fish', rarity))
-      .setFooter({ text: `Harga = berat × ${r.priceMultiplier}x multiplier | Luck tinggi → lebih sering muncul` });
-
-    message.channel.send({ embeds: [embed] });
-  }
+  message.reply({ embeds: [embed] });
 }
 
-// ─── SHOW RODS ────────────────────────────────────────────────
-function showRods(message, rarityFilter) {
-  const filter      = rarityFilter?.toUpperCase();
-  const rarityOrder = ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC'];
-  const filtered    = filter ? rarityOrder.filter(r => r === filter) : rarityOrder;
+// ─── Show items per category ──────────────────────────────────
+async function showCategory(message, type, rarityFilter) {
+  const RARITY_ORDER = ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC'];
+  const toShow = rarityFilter ? [rarityFilter] : RARITY_ORDER;
 
-  for (const rarity of filtered) {
-    const rodList = fishDb.RODS.filter(rod => rod.rarity === rarity);
-    if (rodList.length === 0) continue;
-
-    const r      = fishDb.RARITY[rarity];
-    const visual = ROD_VISUAL[rarity] || '🎣';
-
-    const lines = rodList.map(rod => (
-      `${visual} **${rod.name}** \`${rod.id}\`\n` +
-      `🎯 Luck: +${rod.luck} | ⚖️ Weight: +${rod.weight}\n` +
-      `✨ Harga: ${rod.price.toLocaleString()} Lumens`
-    )).join('\n\n');
-
-    const embed = new EmbedBuilder()
-      .setColor(r.color)
-      .setTitle(`${r.emoji} ${r.name} Rods`)
-      .setDescription(lines)
-      .setThumbnail(getThumbnail('rod', rarity))
-      .setFooter({ text: `!fishop buy <id> untuk beli | !fish equip <id> untuk pasang` });
-
-    message.channel.send({ embeds: [embed] });
+  // Validasi filter
+  if (rarityFilter && !RARITY_ORDER.includes(rarityFilter)) {
+    return message.reply(`❌ Rarity tidak valid.\nPilih: \`common\`, \`uncommon\`, \`rare\`, \`epic\`, \`legendary\`, \`mythic\``);
   }
-}
 
-// ─── SHOW BAITS ───────────────────────────────────────────────
-function showBaits(message, rarityFilter) {
-  const filter      = rarityFilter?.toUpperCase();
-  const rarityOrder = ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC'];
-  const filtered    = filter ? rarityOrder.filter(r => r === filter) : rarityOrder;
+  await message.reply(`⏳ Generating gambar, mohon tunggu...`);
 
-  for (const rarity of filtered) {
-    const baitList = fishDb.BAITS.filter(b => b.rarity === rarity);
-    if (baitList.length === 0) continue;
+  for (const rarity of toShow) {
+    const rarityData = fishDb.RARITY[rarity];
+    let   pool;
 
-    const r      = fishDb.RARITY[rarity];
-    const visual = BAIT_VISUAL[rarity] || '🪱';
+    if (type === 'fish') pool = fishDb.FISH.filter(f => f.rarity === rarity);
+    else if (type === 'rod')  pool = fishDb.RODS.filter(r => r.rarity === rarity);
+    else if (type === 'bait') pool = fishDb.BAITS.filter(b => b.rarity === rarity);
 
-    const lines = baitList.map(bait => (
-      `${visual} **${bait.name}** \`${bait.id}\`\n` +
-      `🎯 Luck: +${bait.luck} | ⚖️ Weight: +${bait.weight}\n` +
-      `✨ Harga: ${bait.price.toLocaleString()} Lumens (x${bait.qty})`
-    )).join('\n\n');
+    if (!pool || pool.length === 0) continue;
 
-    const embed = new EmbedBuilder()
-      .setColor(r.color)
-      .setTitle(`${r.emoji} ${r.name} Baits`)
-      .setDescription(lines)
-      .setThumbnail(getThumbnail('bait', rarity))
-      .setFooter({ text: `!fishop buy <id> untuk beli | !fish bait <id> untuk pasang` });
+    // Generate satu kartu per item & kirim sebagai attachment
+    for (const item of pool) {
+      try {
+        let buf;
+        if (type === 'fish') buf = fishCanvas.generateFishCard(item, rarityData);
+        else if (type === 'rod')  buf = fishCanvas.generateRodCard(item, rarityData);
+        else if (type === 'bait') buf = fishCanvas.generateBaitCard(item, rarityData);
 
-    message.channel.send({ embeds: [embed] });
+        const attachment = new AttachmentBuilder(buf, { name: `${item.id}.png` });
+        await message.channel.send({ files: [attachment] });
+      } catch (err) {
+        console.error(`[FishCatalog] Error generate ${item.id}:`, err);
+        // Fallback ke text kalau canvas error
+        message.channel.send(`${rarityData.emoji} **${item.name}** \`${item.id || ''}\``).catch(() => {});
+      }
+    }
+
+    // Jeda kecil antar rarity biar tidak flood
+    await new Promise(r => setTimeout(r, 300));
   }
-}
-
-// ─── Thumbnail per rarity & kategori ─────────────────────────
-function getThumbnail(category, rarity) {
-  const THUMBNAILS = {
-    fish: {
-      COMMON:    'https://www.fisheries.noaa.gov/s3/styles/full_width/s3/2022-08/640x427-Bluefish.png',
-      UNCOMMON:  'https://www.fisheries.noaa.gov/s3/styles/full_width/s3/2022-08/640x427-Yellowtail-Snapper.png',
-      RARE:      'https://www.fisheries.noaa.gov/s3/styles/full_width/s3/2022-08/640x427-Atlantic-Salmon.png',
-      EPIC:      'https://www.fisheries.noaa.gov/s3/styles/full_width/s3/2022-08/640x427-Bluefin-Tuna-NE.png',
-      LEGENDARY: 'https://www.fisheries.noaa.gov/s3/styles/full_width/s3/2021-12/640x427-Blue-Marlin.png',
-      MYTHIC:    'https://www.fisheries.noaa.gov/s3/styles/full_width/s3/2022-08/640x427-Blue-Whale.png',
-    },
-    rod: {
-      COMMON:    'https://i.imgur.com/zJfkD2m.png',
-      UNCOMMON:  'https://i.imgur.com/zJfkD2m.png',
-      RARE:      'https://i.imgur.com/zJfkD2m.png',
-      EPIC:      'https://i.imgur.com/zJfkD2m.png',
-      LEGENDARY: 'https://i.imgur.com/zJfkD2m.png',
-      MYTHIC:    'https://i.imgur.com/zJfkD2m.png',
-    },
-    bait: {
-      COMMON:    'https://i.imgur.com/eHKJvNm.png',
-      UNCOMMON:  'https://i.imgur.com/eHKJvNm.png',
-      RARE:      'https://i.imgur.com/eHKJvNm.png',
-      EPIC:      'https://i.imgur.com/eHKJvNm.png',
-      LEGENDARY: 'https://i.imgur.com/eHKJvNm.png',
-      MYTHIC:    'https://i.imgur.com/eHKJvNm.png',
-    },
-  };
-  return THUMBNAILS[category]?.[rarity] || null;
 }

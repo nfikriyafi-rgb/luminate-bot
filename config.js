@@ -47,6 +47,10 @@ module.exports = {
     boosterMultiplier: 1.10,    // Multiplier untuk role booster/VIP (10% bonus)
   },
 
+  // ─── MAINTENANCE MODE ─────────────────────────────────────────
+  maintenance: true, // ← ganti false kalau mau buka lagi
+  maintenanceMessage: '🔧 **Game sedang dalam pengembangan oleh Admin.**\nMohon bersabar, kami sedang menyeimbangkan semua sistem. Akan segera dibuka kembali! 🙏',
+
   // ─── CHANNEL SETTINGS ────────────────────────────────────
   channels: {
     // Channel ID yang TIDAK memberikan EXP (spam/bot/AFK)

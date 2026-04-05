@@ -121,7 +121,7 @@ module.exports = {
 
       if (result.failed) {
         fishLogic.savePlayerFishing(userId, currentFishing);
-        channel.send(`<@${userId}> 😈 Ikannya kabur!`).catch(() => {});
+        // Diam saja kalau ikan kabur, tidak perlu notif
         return;
       }
 
@@ -161,12 +161,15 @@ module.exports = {
       const expGain = Math.floor(weight * (r.priceMultiplier || 1) * 0.5);
       const lvlRes  = fishLogic.addFishingExp(userId, expGain);
 
-      // Log singkat ke channel
-      let logMsg = `🎣 <@${userId}> dapat **${r.emoji} ${fish.name}** ⚖️ ${weight}kg — ✨ ${price}`;
-      if (special) logMsg += `\n${special.desc}`;
-      if (lvlRes.leveled) logMsg += `\n🎉 **Fishing Level Up! → Lv.${lvlRes.fishing.level}**`;
-
-      channel.send(logMsg).catch(() => {});
+      // Hanya notif kalau ada event spesial
+      if (special || lvlRes.leveled) {
+        let notif = '';
+        if (special?.type === 'jackpot_weight' || special?.type === 'jackpot_rarity' || special?.type === 'treasure')
+          notif += `<@${userId}> ${special.desc}\n`;
+        if (lvlRes.leveled)
+          notif += `🎉 <@${userId}> **Fishing Level Up! → Lv.${lvlRes.fishing.level}**`;
+        if (notif) channel.send(notif.trim()).catch(() => {});
+      }
 
     }, AUTO_INTERVAL);
 
