@@ -69,7 +69,7 @@ module.exports = {
       withdraw:  '1487535038630199306', // ← ID channel withdraw/mini-game
       gambling:  '', // ← ID channel gambling
       rpg:       '1487535627749691472', // ← ID channel RPG (fight, adventure, dll)
-      fishing:   '1490036678759551206', // ← ID channel fishing (mancing)
+      fishing:   '1490276778546040994', // ← ID channel fishing (mancing)
     },
 
     // ─── SERVER STATS ─────────────────────────────────────
