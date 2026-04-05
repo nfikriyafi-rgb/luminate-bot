@@ -2,12 +2,17 @@ const leveling  = require('../utils/leveling');
 const currency  = require('../utils/currency');
 const config    = require('../config');
 
+// ─── Command yang BOLEH dipakai saat auto fishing ─────────────
+const AUTO_FISH_ALLOWED = new Set([
+  'autofish', 'af', 'automancing',
+  'fish',     // boleh cek profile/inv tapi bukan mancing manual
+]);
+
 // ─── Cek apakah command boleh dipakai di channel ini ─────────
 function checkGameChannel(message, gameKey) {
   const channelId = config.channels.gameChannels?.[gameKey];
-  if (!channelId) return true; // belum diset = bebas dimana saja
+  if (!channelId) return true;
   if (message.channel.id === channelId) return true;
-
   const channel = message.client.channels.cache.get(channelId);
   const mention = channel ? `<#${channelId}>` : `channel game`;
   message.reply(`❌ Command ini hanya bisa digunakan di ${mention}!`).catch(() => {});
@@ -22,6 +27,7 @@ const GAME_CHANNEL_MAP = {
   fight: 'rpg', battle: 'rpg', hunt: 'rpg',
   fish: 'fishing', mancing: 'fishing', fishing: 'fishing',
   fishop: 'fishing', fishingshop: 'fishing', rodshop: 'fishing',
+  autofish: 'fishing', af: 'fishing', automancing: 'fishing',
   adventure: 'rpg', adv: 'rpg', explore: 'rpg',
   profile: 'rpg', char: 'rpg', stats: 'rpg', hero: 'rpg',
   inventory: 'rpg', inv: 'rpg', bag: 'rpg',
@@ -45,7 +51,22 @@ module.exports = {
         client.commands.find(c => c.aliases && c.aliases.includes(commandName));
 
       if (command) {
-        // Cek game channel restriction
+        // ─── Cek auto fishing block ───────────────────────
+        const autofishCmd = client.commands.get('autofish');
+        if (autofishCmd?.isAutoFishing(message.author.id)) {
+          // Kalau command bukan yang diizinkan, block
+          const isAllowed = AUTO_FISH_ALLOWED.has(commandName);
+          // Khusus !fish, hanya sub-command non-mancing yang diizinkan
+          const isFishManual = commandName === 'fish' && !args[0];
+          if (!isAllowed || isFishManual) {
+            return message.reply(
+              `⚠️ Kamu sedang **auto fishing**! Command lain tidak bisa dipakai.\n` +
+              `Ketik \`!autofish stop\` untuk berhenti mancing otomatis.`
+            ).catch(() => {});
+          }
+        }
+
+        // ─── Cek game channel restriction ─────────────────
         const gameKey = GAME_CHANNEL_MAP[commandName];
         if (gameKey && !checkGameChannel(message, gameKey)) return;
 
@@ -76,7 +97,6 @@ module.exports = {
     // ─── Word Chain: proses kata biasa ────────────────────
     const wordchain = client.commands.get('wordchain');
     if (wordchain) {
-      // Word chain hanya di channel wordchain
       const wcChannelId = config.channels.gameChannels?.wordchain;
       if (!wcChannelId || message.channel.id === wcChannelId) {
         await wordchain.handleMessage(message, client);
