@@ -3,12 +3,13 @@
 // ─────────────────────────────────────────────────────────────
 
 const RARITY = {
-  COMMON:    { name: 'Common',    emoji: '⚪', color: 0x99aab5, priceMultiplier: 1,  dropChance: 60   },
+  COMMON:    { name: 'Common',    emoji: '⚪', color: 0x99aab5, priceMultiplier: 1,  dropChance: 80   },
   UNCOMMON:  { name: 'Uncommon',  emoji: '🟢', color: 0x57f287, priceMultiplier: 2,  dropChance: 25   },
   RARE:      { name: 'Rare',      emoji: '🔵', color: 0x5865f2, priceMultiplier: 4,  dropChance: 10   },
   EPIC:      { name: 'Epic',      emoji: '🟣', color: 0x9b59b6, priceMultiplier: 7,  dropChance: 4    },
-  LEGENDARY: { name: 'Legendary', emoji: '🟡', color: 0xf5c518, priceMultiplier: 12, dropChance: 0.9  },
-  MYTHIC:    { name: 'Mythic',    emoji: '🔴', color: 0xe74c3c, priceMultiplier: 25, dropChance: 0.1  },
+  LEGENDARY: { name: 'Legendary', emoji: '🟡', color: 0xf5c518, priceMultiplier: 12, dropChance: 0.8  },
+  MYTHIC:    { name: 'Mythic',    emoji: '🔴', color: 0xe74c3c, priceMultiplier: 25, dropChance: 0.2  },
+  SECRET:    { name: 'Secret',    emoji: '�', color: 0xe67e22, priceMultiplier: 50, dropChance: 0.05 },
 };
 
 // ─── RODS ────────────────────────────────────────────────────
@@ -31,6 +32,8 @@ const RODS = [
   // MYTHIC
   { id: 'rod_011', name: 'Poseidon Rod',     rarity: 'MYTHIC',    luck: 20, weight: 20, price: 60000 },
   { id: 'rod_012', name: 'Void Ocean Rod',   rarity: 'MYTHIC',    luck: 25, weight: 18, price: 75000 },
+  // Admin-rods (not for sale)
+  { id: 'rod_099', name: 'the god rod',   rarity: 'secret',    luck: 999, weight: 999, price: 100000000 },
 ];
 
 // ─── BAITS ───────────────────────────────────────────────────
