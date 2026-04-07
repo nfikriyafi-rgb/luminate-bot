@@ -69,6 +69,7 @@ function rollFish(totalLuck, totalWeight, areaKey) {
     EPIC:      Math.min(15, 4  + luckTiers * 0.5 + area.rarityBoost * 30),
     LEGENDARY: Math.min(8,  0.9 + luckTiers * 0.3 + area.rarityBoost * 15),
     MYTHIC:    Math.min(4,  0.1 + luckTiers * 0.1 + area.rarityBoost * 5),
+    SECRET:    Math.min(2,  0.05 + luckTiers * 0.05 + area.rarityBoost * 2),
   };
 
   // Normalize total ke 100
