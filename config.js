@@ -60,7 +60,7 @@ module.exports = {
     levelUpChannelId: '',
 
     // Channel announcement
-    announcementChannelId: '',
+    announcementChannelId: '1433455163498303632',
 
     // Channel khusus per game (isi dengan ID channel)
     // Game HANYA bisa dimainkan di channel ini
@@ -75,7 +75,7 @@ module.exports = {
     // ─── SERVER STATS ─────────────────────────────────────
     // ID Category khusus untuk voice channel server stats
     // Buat category baru di Discord → klik kanan → Copy ID → paste di sini
-    statsCategory: '', // ← ID category "📊 SERVER STATS"
+    statsCategory: '1468779291306102835', // ← ID category "📊 SERVER STATS"
 
     // ID voice channel stats (diisi otomatis saat bot pertama jalan)
     // Bisa juga diisi manual jika channel sudah ada
