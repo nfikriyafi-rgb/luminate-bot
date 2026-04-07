@@ -9,6 +9,10 @@ module.exports = {
   token: process.env.DISCORD_TOKEN || 'YOUR_BOT_TOKEN_HERE',
   clientId: process.env.CLIENT_ID  || 'YOUR_CLIENT_ID_HERE',
 
+  // ID Discord kamu — penerima notif DM saat ada yang join VC
+  // Cara dapat: aktifkan Developer Mode → klik kanan nama kamu → Copy ID
+  ownerNotifId: '1049723787387617300',  // ← isi dengan ID Discord kamu
+
   // ─── PREFIX (untuk command text biasa) ───────────────────
   prefix: '!',
 
@@ -46,10 +50,6 @@ module.exports = {
     reaction: 20,               // Bonus dari reaction / membantu member
     boosterMultiplier: 1.10,    // Multiplier untuk role booster/VIP (10% bonus)
   },
-
-  // ─── MAINTENANCE MODE ─────────────────────────────────────────
-  maintenance: true, // ← ganti false kalau mau buka lagi
-  maintenanceMessage: '🔧 **Game sedang dalam pengembangan oleh Admin.**\nMohon bersabar, kami sedang menyeimbangkan semua sistem. Akan segera dibuka kembali! 🙏',
 
   // ─── CHANNEL SETTINGS ────────────────────────────────────
   channels: {

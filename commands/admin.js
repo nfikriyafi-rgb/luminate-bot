@@ -339,6 +339,57 @@ function handleResetLumens(message, args) {
 }
 
 // ─────────────────────────────────────────────────────────────
+//  GOD ITEMS (OWNER ONLY)
+// ─────────────────────────────────────────────────────────────
+
+async function handleGiveGod(message, args) {
+  // Hanya owner server
+  const guild = message.guild;
+  if (message.author.id !== guild.ownerId) {
+    return message.reply('❌ Command ini hanya untuk **Owner server**.');
+  }
+
+  const target = message.mentions.members.first();
+  if (!target) return message.reply('❌ Tag user.\nContoh: `!admin givegod @user rod` atau `!admin givegod @user bait`');
+
+  const type = (args[2] || '').toLowerCase();
+  if (type !== 'rod' && type !== 'bait' && type !== 'all') {
+    return message.reply('❌ Pilih tipe: `rod`, `bait`, atau `all`.\nContoh: `!admin givegod @user all`');
+  }
+
+  const { giveGodItem } = require('../utils/fishingLogic');
+  const fishDb = require('../utils/fishingItems');
+
+  if (type === 'rod' || type === 'all') giveGodItem(target.id, 'rod');
+  if (type === 'bait' || type === 'all') giveGodItem(target.id, 'bait');
+
+  const rodGod  = fishDb.getRod('rod_god');
+  const baitGod = fishDb.getBait('bait_god');
+
+  const embed = new EmbedBuilder()
+    .setColor(0xffd700)
+    .setTitle('👑 God Item Diberikan!')
+    .setDescription(`Item eksklusif **God** telah diberikan ke **${target.displayName}**.`)
+    .setThumbnail(target.user.displayAvatarURL({ dynamic: true }))
+    .addFields(
+      type !== 'bait' ? { name: '🎣 The Rod God',  value: `Luck: **999** | Weight: **999**`, inline: true } : { name: '\u200B', value: '\u200B', inline: false },
+      type !== 'rod'  ? { name: '🪱 The Bait God', value: `Luck: **999** | Weight: **999** (x999)`, inline: true } : { name: '\u200B', value: '\u200B', inline: false },
+    )
+    .setFooter({ text: `Diberikan oleh Owner: ${message.author.tag}` })
+    .setTimestamp();
+
+  message.reply({ embeds: [embed] });
+
+  // Notif ke user via DM
+  target.user.send(
+    `👑 Selamat! Kamu mendapat item eksklusif **God** dari Owner server!\n` +
+    (type !== 'bait' ? `🎣 **The Rod God** — Luck 999, Weight 999\n` : '') +
+    (type !== 'rod'  ? `🪱 **The Bait God** — Luck 999, Weight 999 (x999)\n` : '') +
+    `\nKetik \`!fish equip rod_god\` dan \`!fish bait bait_god\` untuk pasang!`
+  ).catch(() => {});
+}
+
+// ─────────────────────────────────────────────────────────────
 //  HELP
 // ─────────────────────────────────────────────────────────────
 
@@ -360,6 +411,12 @@ function sendHelp(message) {
       { name: '`!admin addlumens @user <jumlah>`',      value: 'Tambah Lumens ke user.',                                     inline: false },
       { name: '`!admin removelumens @user <jumlah>`',   value: 'Kurangi Lumens dari user.',                                  inline: false },
       { name: '`!admin resetlumens @user RESET`',       value: 'Reset semua Lumens user ke 0. Konfirmasi dengan `RESET`.',   inline: false },
+      { name: '\u200B', value: '\u200B', inline: false },
+      { name: '👑 God Items (Owner Only)', value: '\u200B', inline: false },
+      { name: '`!admin givegod @user rod`',              value: 'Berikan **👑 The Rod God** ke user. Luck & Weight: **999**. Hanya owner server.',   inline: false },
+      { name: '`!admin givegod @user bait`',             value: 'Berikan **👑 The Bait God** ke user. Luck & Weight: **999** (x999). Hanya owner.', inline: false },
+      { name: '`!admin givegod @user all`',              value: 'Berikan **Rod God + Bait God** sekaligus. Hanya owner server.',                    inline: false },
+      { name: '`!admin givespecial @user rod/bait/all`', value: 'Alias dari `givegod` — sama persis.',                                              inline: false },
       { name: '\u200B', value: '\u200B', inline: false },
       { name: '📣 Lainnya', value: '\u200B', inline: false },
       { name: '`!announce [#channel]`',                 value: 'Kirim embed announcement ke channel tertentu.',              inline: false },
@@ -394,6 +451,8 @@ module.exports = {
       case 'addlumens':    return handleAddLumens(message, args);
       case 'removelumens': return handleRemoveLumens(message, args);
       case 'resetlumens':  return handleResetLumens(message, args);
+      case 'givegod':      return handleGiveGod(message, args);
+      case 'givespecial':  return handleGiveGod(message, args); // alias
       default:             return sendHelp(message);
     }
   },
