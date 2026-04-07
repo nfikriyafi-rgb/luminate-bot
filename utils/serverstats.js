@@ -3,7 +3,7 @@ const fs   = require('fs');
 const path = require('path');
 const db   = require('./database');
 
-const REFRESH_INTERVAL = 25 * 60 * 1000;
+const REFRESH_INTERVAL = 10 * 60 * 1000;
 const STATS_FILE       = path.resolve('./data/stats.json');
 
 function loadStatsData() {
