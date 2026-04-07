@@ -2,23 +2,25 @@
 //  LUMINATE FISHING — GAME LOGIC
 // ─────────────────────────────────────────────────────────────
 
-const db      = require('./database');
-const fishDb  = require('./fishingItems');
+const db     = require('./database');
+const fishDb = require('./fishingItems');
 
 // ─── Default player fishing data ─────────────────────────────
 function defaultFishing() {
   return {
-    level:        1,
-    exp:          0,
-    rod:          'rod_001',
-    bait:         { id: 'bait_001', qty: 10 },
-    area:         'river',
-    totalCaught:  0,
-    totalWeight:  0,
-    totalEarned:  0,
-    inventory:    [], // [{ fishId, weight, price }]
-    rodInventory: [], // ['rod_002', ...]
-    baitInventory:[], // [{ id, qty }]
+    level:          1,
+    exp:            0,
+    rod:            'rod_001',
+    bait:           { id: 'bait_001', qty: 10 },
+    area:           'river',
+    totalCaught:    0,
+    totalWeight:    0,
+    totalEarned:    0,
+    secretCaught:   0,   // total ikan SECRET yang pernah ditangkap
+    questCompleted: [],  // quest reward yang sudah diterima
+    inventory:      [],  // [{ fishId, weight, price }]
+    rodInventory:   [],  // ['rod_002', ...]
+    baitInventory:  [],  // [{ id, qty }]
   };
 }
 
@@ -28,6 +30,9 @@ function getPlayerFishing(userId) {
     user.fishing = defaultFishing();
     db.saveUser(userId, user);
   }
+  // Pastikan field baru ada kalau user lama
+  if (user.fishing.secretCaught   === undefined) user.fishing.secretCaught   = 0;
+  if (user.fishing.questCompleted === undefined) user.fishing.questCompleted = [];
   return user.fishing;
 }
 
@@ -53,14 +58,43 @@ function addFishingExp(userId, amount) {
   return { fishing, leveled };
 }
 
+// ─── Cek & berikan quest reward SECRET ───────────────────────
+// Returns array of quest rewards yang baru saja selesai
+function checkSecretQuests(fishing) {
+  const newRewards = [];
+  for (const quest of fishDb.SECRET_QUEST_REWARDS) {
+    // Sudah dapat reward ini sebelumnya? Skip
+    if (fishing.questCompleted.includes(quest.reward)) continue;
+    // Sudah cukup ikan SECRET?
+    if (fishing.secretCaught >= quest.secretFishCount) {
+      // Berikan reward
+      if (quest.type === 'rod') {
+        if (!fishing.rodInventory.includes(quest.reward)) {
+          fishing.rodInventory.push(quest.reward);
+        }
+      } else if (quest.type === 'bait') {
+        const item   = fishDb.getBait(quest.reward);
+        const existing = fishing.baitInventory.find(b => b.id === quest.reward);
+        if (existing) {
+          existing.qty += item?.qty || 1;
+        } else {
+          fishing.baitInventory.push({ id: quest.reward, qty: item?.qty || 1 });
+        }
+      }
+      fishing.questCompleted.push(quest.reward);
+      newRewards.push(quest);
+    }
+  }
+  return newRewards;
+}
+
 // ─── Roll ikan berdasarkan luck, weight, area ─────────────────
 function rollFish(totalLuck, totalWeight, areaKey) {
-  const area       = fishDb.getArea(areaKey);
+  const area          = fishDb.getArea(areaKey);
   const effectiveLuck   = totalLuck + area.luckBonus;
   const effectiveWeight = totalWeight + area.weightBonus;
 
   // ── Step 1: tentukan rarity ───────────────────────────────
-  // Setiap 5 luck: -2% common, +1% naik ke rare ke atas
   const luckTiers = Math.floor(effectiveLuck / 5);
   const chances   = {
     COMMON:    Math.max(20, 60 - luckTiers * 2 - area.rarityBoost * 100),
@@ -69,10 +103,13 @@ function rollFish(totalLuck, totalWeight, areaKey) {
     EPIC:      Math.min(15, 4  + luckTiers * 0.5 + area.rarityBoost * 30),
     LEGENDARY: Math.min(8,  0.9 + luckTiers * 0.3 + area.rarityBoost * 15),
     MYTHIC:    Math.min(4,  0.1 + luckTiers * 0.1 + area.rarityBoost * 5),
-    SECRET:    Math.min(2,  0.05 + luckTiers * 0.05 + area.rarityBoost * 2),
+    // SECRET: sangat kecil, hanya bisa muncul di mystic_water
+    SECRET:    areaKey === 'mystic_water'
+      ? Math.min(1, 0.001 + (effectiveLuck / 1000) + area.rarityBoost * 2)
+      : 0,
   };
 
-  // Normalize total ke 100
+  // Normalize
   const total = Object.values(chances).reduce((a, b) => a + b, 0);
   let roll    = Math.random() * total;
   let selectedRarity = 'COMMON';
@@ -83,54 +120,67 @@ function rollFish(totalLuck, totalWeight, areaKey) {
 
   // ── Step 2: pilih ikan dari rarity yang terpilih ──────────
   const pool = fishDb.FISH.filter(f => f.rarity === selectedRarity);
+  if (pool.length === 0) {
+    // Fallback ke COMMON kalau pool kosong
+    const fallback = fishDb.FISH.filter(f => f.rarity === 'COMMON');
+    return rollFromPool(fallback, effectiveWeight, false);
+  }
+
+  return rollFromPool(pool, effectiveWeight, selectedRarity === 'SECRET');
+}
+
+function rollFromPool(pool, effectiveWeight, isSecret) {
   const fish = pool[Math.floor(Math.random() * pool.length)];
 
   // ── Step 3: hitung berat ──────────────────────────────────
-  const baseWeight   = fish.weightMin + Math.random() * (fish.weightMax - fish.weightMin);
-  const weightBoost  = effectiveWeight * (0.5 + Math.random());
-  let   finalWeight  = parseFloat((baseWeight + weightBoost * 0.3).toFixed(1));
-  finalWeight        = Math.max(fish.weightMin, Math.min(fish.weightMax * 1.5, finalWeight));
+  const baseWeight  = fish.weightMin + Math.random() * (fish.weightMax - fish.weightMin);
+  const weightBoost = effectiveWeight * (0.5 + Math.random());
+  let   finalWeight = parseFloat((baseWeight + weightBoost * 0.3).toFixed(1));
+  finalWeight       = Math.max(fish.weightMin, Math.min(fish.weightMax * 1.5, finalWeight));
 
   // ── Step 4: special RNG ───────────────────────────────────
   let special = null;
 
-  // Jackpot Catch (1%) → weight x2 atau rarity naik 1 tier
-  if (Math.random() < 0.01) {
-    const jackpotType = Math.random() < 0.5 ? 'weight' : 'rarity';
-    if (jackpotType === 'weight') {
-      finalWeight *= 2;
-      special = { type: 'jackpot_weight', desc: '💥 JACKPOT! Berat ikan x2!' };
-    } else {
-      const rarityOrder  = ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC'];
-      const currentIdx   = rarityOrder.indexOf(fish.rarity);
-      if (currentIdx < rarityOrder.length - 1) {
-        const newRarity  = rarityOrder[currentIdx + 1];
-        const betterPool = fishDb.FISH.filter(f => f.rarity === newRarity);
-        if (betterPool.length > 0) {
-          const betterFish = betterPool[Math.floor(Math.random() * betterPool.length)];
-          special = { type: 'jackpot_rarity', desc: `💥 JACKPOT! Rarity naik ke ${fishDb.RARITY[newRarity].emoji} ${newRarity}!` };
-          return { fish: betterFish, weight: finalWeight, special, failed: false };
+  // Secret fish tidak kena fail/jackpot biasa
+  if (!isSecret) {
+    // Jackpot (1%)
+    if (Math.random() < 0.01) {
+      if (Math.random() < 0.5) {
+        finalWeight *= 2;
+        special = { type: 'jackpot_weight', desc: '💥 JACKPOT! Berat ikan x2!' };
+      } else {
+        const rarityOrder = ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC'];
+        const idx = rarityOrder.indexOf(fish.rarity);
+        if (idx < rarityOrder.length - 1) {
+          const betterRarity = rarityOrder[idx + 1];
+          const betterPool   = fishDb.FISH.filter(f => f.rarity === betterRarity);
+          if (betterPool.length > 0) {
+            const betterFish = betterPool[Math.floor(Math.random() * betterPool.length)];
+            special = { type: 'jackpot_rarity', desc: `💥 JACKPOT! Rarity naik ke ${fishDb.RARITY[betterRarity].emoji} ${betterRarity}!` };
+            return { fish: betterFish, weight: finalWeight, special, failed: false, isSecret: false };
+          }
         }
       }
     }
+
+    // Treasure (5%)
+    if (!special && Math.random() < 0.05) {
+      const bonus = Math.floor(Math.random() * 200 + 50);
+      special = { type: 'treasure', desc: `💎 Treasure! Bonus ✨ ${bonus} Lumens!`, bonus };
+    }
+
+    // Fail (5%)
+    if (!special && Math.random() < 0.05) {
+      return { fish: null, weight: 0, special: null, failed: true, isSecret: false };
+    }
   }
 
-  // Treasure Catch (5%) → bonus coin
-  if (!special && Math.random() < 0.05) {
-    const bonus = Math.floor(Math.random() * 200 + 50);
-    special = { type: 'treasure', desc: `💎 Treasure! Bonus ✨ ${bonus} Lumens!`, bonus };
-  }
-
-  // Fail (5%) → ikan kabur
-  if (!special && Math.random() < 0.05) {
-    return { fish: null, weight: 0, special: null, failed: true };
-  }
-
-  return { fish, weight: parseFloat(finalWeight.toFixed(1)), special, failed: false };
+  return { fish, weight: parseFloat(finalWeight.toFixed(1)), special, failed: false, isSecret };
 }
 
 module.exports = {
   getPlayerFishing, savePlayerFishing,
   expForLevel, addFishingExp,
   rollFish, defaultFishing,
+  checkSecretQuests,
 };

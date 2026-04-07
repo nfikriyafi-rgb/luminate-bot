@@ -67,12 +67,12 @@ function showRods(message) {
   const embed   = new EmbedBuilder()
     .setColor(0x5865f2)
     .setTitle('🎣 Rod Shop')
-    .setDescription(`Saldo: ✨ **${balance} Lumens**\n\u200B`)
+    .setDescription(`Saldo: ✨ **${balance} Lumens**\n\n⚠️ Rod ❓ SECRET & 👑 SPECIAL tidak dijual — hanya dari quest!\n\u200B`)
     .setFooter({ text: '!fishop buy <id> untuk beli' });
 
   const rarityOrder = ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC'];
   for (const rarity of rarityOrder) {
-    const rods = fishDb.RODS.filter(r => r.rarity === rarity);
+    const rods = fishDb.getShopRods().filter(r => r.rarity === rarity);
     if (rods.length === 0) continue;
     const r     = fishDb.RARITY[rarity];
     const lines = rods.map(rod => {
@@ -95,12 +95,12 @@ function showBaits(message) {
   const embed   = new EmbedBuilder()
     .setColor(0x5865f2)
     .setTitle('🪱 Bait Shop')
-    .setDescription(`Saldo: ✨ **${balance} Lumens**\n\u200B`)
+    .setDescription(`Saldo: ✨ **${balance} Lumens**\n\n⚠️ Bait ❓ SECRET & 👑 SPECIAL tidak dijual — hanya dari quest!\n\u200B`)
     .setFooter({ text: '!fishop buy <id> untuk beli' });
 
   const rarityOrder = ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC'];
   for (const rarity of rarityOrder) {
-    const baits = fishDb.BAITS.filter(b => b.rarity === rarity);
+    const baits = fishDb.getShopBaits().filter(b => b.rarity === rarity);
     if (baits.length === 0) continue;
     const r     = fishDb.RARITY[rarity];
     const lines = baits.map(bait => {
@@ -127,6 +127,16 @@ function handleBuy(message, args) {
   // Cek apakah rod
   const rod = fishDb.getRod(itemId);
   if (rod) {
+    if (!rod.obtainable) {
+      return message.reply(
+        `❌ **${rod.name}** tidak bisa dibeli!\n` +
+        (rod.questReward
+          ? `${rod.questDesc || 'Dapatkan dari quest menangkap ikan SECRET.'}`
+          : rod.adminOnly
+          ? '👑 Item ini hanya bisa diberikan oleh Admin.'
+          : 'Item ini tidak tersedia di shop.')
+      );
+    }
     if (fishing.rod === itemId || fishing.rodInventory.includes(itemId)) {
       return message.reply(`⚠️ Kamu sudah punya **${rod.name}**!`);
     }
@@ -158,6 +168,16 @@ function handleBuy(message, args) {
   // Cek apakah bait
   const bait = fishDb.getBait(itemId);
   if (bait) {
+    if (!bait.obtainable) {
+      return message.reply(
+        `❌ **${bait.name}** tidak bisa dibeli!\n` +
+        (bait.questReward
+          ? `${bait.questDesc || 'Dapatkan dari quest menangkap ikan SECRET.'}`
+          : bait.adminOnly
+          ? '👑 Item ini hanya bisa diberikan oleh Admin.'
+          : 'Item ini tidak tersedia di shop.')
+      );
+    }
     if (balance < bait.price) {
       return message.reply(`❌ Lumens tidak cukup!\nHarga: ✨ **${bait.price.toLocaleString()}** | Saldo: ✨ **${balance}**`);
     }

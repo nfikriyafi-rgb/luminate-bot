@@ -84,7 +84,7 @@ module.exports = {
       return message.reply(`😈 Ikannya kabur! Nasib kurang hoki kali ini. Coba lagi!${bait ? '' : '\n💡 Tip: Pakai bait untuk meningkatkan Luck!'}`);
     }
 
-    const { fish, weight, special } = result;
+    const { fish, weight, special, isSecret } = result;
     const price = fishDb.calcFishPrice(fish, weight);
     const r     = fishDb.RARITY[fish.rarity];
 
@@ -94,6 +94,9 @@ module.exports = {
     fishing.totalWeight += weight;
 
     fishLogic.savePlayerFishing(userId, fishing);
+
+    // ── Cek quest progress ────────────────────────────────────
+    const completedQuests = fishLogic.updateQuestProgress(userId, fish);
 
     // Tambah fishing EXP
     const expGain   = Math.floor(weight * (r.priceMultiplier || 1) * 0.5);
@@ -107,20 +110,32 @@ module.exports = {
     }
 
     // Build embed
+    const embedColor = isSecret ? 0x2b2d31 : r.color;
+    const embedTitle = isSecret
+      ? `❓ ${message.member.displayName} menangkap ikan MISTERIUS!`
+      : `🎣 ${message.member.displayName} dapat ikan!`;
+
     const embed = new EmbedBuilder()
-      .setColor(r.color)
-      .setTitle(`🎣 ${message.member.displayName} dapat ikan!`)
+      .setColor(embedColor)
+      .setTitle(embedTitle)
       .addFields(
-        { name: 'Ikan',      value: `${r.emoji} **${fish.name}**`,              inline: true  },
-        { name: 'Rarity',    value: fishDb.formatRarity(fish.rarity),            inline: true  },
-        { name: 'Berat',     value: `⚖️ **${weight} kg**`,                      inline: true  },
-        { name: 'Harga',     value: `✨ **${price} Lumens**`,                   inline: true  },
-        { name: 'Fishing EXP', value: `+**${expGain}** EXP`,                    inline: true  },
-        { name: 'Area',      value: area.name,                                   inline: true  },
+        { name: 'Ikan',        value: `${r.emoji} **${fish.name}**`,           inline: true  },
+        { name: 'Rarity',      value: fishDb.formatRarity(fish.rarity),         inline: true  },
+        { name: 'Berat',       value: `⚖️ **${weight} kg**`,                   inline: true  },
+        { name: 'Harga',       value: `✨ **${price} Lumens**`,                inline: true  },
+        { name: 'Fishing EXP', value: `+**${expGain}** EXP`,                   inline: true  },
+        { name: 'Area',        value: area.name,                                inline: true  },
       )
       .setFooter({ text: `Rod: ${rod?.name || 'Basic'} | Bait: ${bait?.name || 'Tidak ada'} | Luck: ${totalLuck} | Weight: ${totalWeight} | !fish sellall untuk jual semua` });
 
-    if (special) {
+    if (fish.rarity === 'SECRET') {
+      const secretCount = fishLogic.getPlayerFishing(userId).secretCaught[fish.id] || 0;
+      embed.setDescription(
+        `🌑 **WOW! Kamu menangkap ikan ❓ SECRET yang sangat langka!**\n` +
+        `**${fish.name}** ditangkap ${secretCount}x total.\n` +
+        `Ketik \`!fishquest\` untuk cek progress quest!`
+      );
+    } else if (special) {
       embed.setDescription(`🎉 **${special.desc}**${bonusLumens > 0 ? `\nBonus langsung masuk ke saldo!` : ''}`);
     }
 
@@ -142,9 +157,31 @@ module.exports = {
       });
     }
 
-    message.reply({ embeds: [embed] });
+    await message.reply({ embeds: [embed] });
+
+    // ── Notif quest selesai ───────────────────────────────────
+    for (const { questId, quest } of completedQuests) {
+      const questEmbed = new EmbedBuilder()
+        .setColor(0x2b2d31)
+        .setTitle('❓ SECRET QUEST SELESAI!')
+        .setDescription(
+          `🎉 <@${userId}> menyelesaikan quest **${quest.name}**!\n\n` +
+          `🎁 **Reward diterima:** ${quest.rewardText}\n\n` +
+          `Ketik \`!fish equip\` atau \`!fish bait\` untuk pasang item secret kamu!`
+        )
+        .setFooter({ text: 'Item secret tidak bisa dijual atau diperjualbelikan' });
+      message.channel.send({ embeds: [questEmbed] }).catch(() => {});
+
+      // DM notif
+      message.author.send(
+        `🎉 Quest **${quest.name}** selesai!\nReward: ${quest.rewardText}`
+      ).catch(() => {});
+    }
+        setFooter({ text: 'Terus tangkap ikan SECRET untuk quest berikutnya!' });
+      await message.channel.send({ content: `<@${userId}>`, embeds: [questEmbed] });
   },
 };
+
 
 // ─── SELL 1 IKAN ─────────────────────────────────────────────
 function handleSell(message, args) {
@@ -235,10 +272,10 @@ function handleInventory(message) {
 
 // ─── PROFILE ─────────────────────────────────────────────────
 function handleProfile(message) {
-  const fishing = fishLogic.getPlayerFishing(message.author.id);
-  const rod     = fishDb.getRod(fishing.rod);
-  const bait    = fishing.bait ? fishDb.getBait(fishing.bait.id) : null;
-  const area    = fishDb.getArea(fishing.area);
+  const fishing   = fishLogic.getPlayerFishing(message.author.id);
+  const rod       = fishDb.getRod(fishing.rod);
+  const bait      = fishing.bait ? fishDb.getBait(fishing.bait.id) : null;
+  const area      = fishDb.getArea(fishing.area);
   const expNeeded = fishLogic.expForLevel(fishing.level);
 
   const expPct = Math.floor((fishing.exp / expNeeded) * 10);
@@ -246,6 +283,14 @@ function handleProfile(message) {
 
   const rodR  = rod  ? fishDb.RARITY[rod.rarity]  : null;
   const baitR = bait ? fishDb.RARITY[bait.rarity] : null;
+
+  // Quest progress
+  const secretCount = fishing.secretCaught || 0;
+  const questLines  = fishDb.SECRET_QUEST_REWARDS.map(q => {
+    const done = (fishing.questCompleted || []).includes(q.reward);
+    const bar  = done ? '✅' : secretCount >= q.secretFishCount ? '🟡' : '⬜';
+    return `${bar} ${q.secretFishCount}x SECRET → **${fishDb.getRod(q.reward)?.name || fishDb.getBait(q.reward)?.name || q.reward}**`;
+  }).join('\n');
 
   message.reply({
     embeds: [
@@ -255,12 +300,14 @@ function handleProfile(message) {
         .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
         .addFields(
           { name: '📊 Fishing Level', value: `**${fishing.level}**\n\`${expBar}\` ${fishing.exp}/${expNeeded} EXP`, inline: false },
-          { name: '🎣 Rod',    value: rod  ? `${rodR.emoji} **${rod.name}**\n🎯 Luck: +${rod.luck} | ⚖️ Weight: +${rod.weight}`   : '*Tidak ada*', inline: true },
-          { name: '🪱 Bait',   value: bait ? `${baitR.emoji} **${bait.name}** (x${fishing.bait.qty})\n🎯 Luck: +${bait.luck} | ⚖️ Weight: +${bait.weight}` : '*Tidak ada*', inline: true },
-          { name: '🗺️ Area',   value: area.name, inline: true },
-          { name: '🐟 Total Tangkapan', value: `**${fishing.totalCaught}** ikan`, inline: true },
-          { name: '⚖️ Total Berat',     value: `**${fishing.totalWeight.toFixed(1)} kg**`,     inline: true },
-          { name: '✨ Total Earned',     value: `**${fishing.totalEarned} Lumens**`,             inline: true },
+          { name: '🎣 Rod',           value: rod  ? `${rodR.emoji} **${rod.name}**\n🎯 Luck: +${rod.luck} | ⚖️ Weight: +${rod.weight}`    : '*Tidak ada*', inline: true },
+          { name: '🪱 Bait',          value: bait ? `${baitR.emoji} **${bait.name}** (x${fishing.bait.qty})\n🎯 Luck: +${bait.luck} | ⚖️ Weight: +${bait.weight}` : '*Tidak ada*', inline: true },
+          { name: '🗺️ Area',          value: area.name,                                                         inline: true  },
+          { name: '🐟 Total Tangkapan',value: `**${fishing.totalCaught}** ikan`,                                 inline: true  },
+          { name: '⚖️ Total Berat',   value: `**${fishing.totalWeight.toFixed(1)} kg**`,                        inline: true  },
+          { name: '✨ Total Earned',   value: `**${fishing.totalEarned} Lumens**`,                               inline: true  },
+          { name: '❓ Ikan SECRET',    value: `Ditangkap: **${secretCount}x**`,                                  inline: true  },
+          { name: '❓ SECRET Quest',   value: questLines || 'Belum ada',                                         inline: false },
         )
         .setFooter({ text: '!fish untuk mancing • !fishop untuk beli rod & bait' }),
     ],

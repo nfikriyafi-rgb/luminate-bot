@@ -43,7 +43,7 @@ function showMenu(message) {
 
 // ─── Show items per category ──────────────────────────────────
 async function showCategory(message, type, rarityFilter) {
-  const RARITY_ORDER = ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC'];
+  const RARITY_ORDER = ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC','SECRET'];
   const toShow = rarityFilter ? [rarityFilter] : RARITY_ORDER;
 
   // Validasi filter
