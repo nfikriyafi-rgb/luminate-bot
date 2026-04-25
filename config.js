@@ -75,7 +75,7 @@ module.exports = {
     // ─── SERVER STATS ─────────────────────────────────────
     // ID Category khusus untuk voice channel server stats
     // Buat category baru di Discord → klik kanan → Copy ID → paste di sini
-    statsCategory: '1468779291306102835', // ← ID category "📊 SERVER STATS"
+    statsCategory: '1497308722794467338', // ← ID category "📊 SERVER STATS"
 
     // ID voice channel stats (diisi otomatis saat bot pertama jalan)
     // Bisa juga diisi manual jika channel sudah ada
