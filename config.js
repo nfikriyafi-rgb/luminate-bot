@@ -16,6 +16,10 @@ module.exports = {
   // ─── PREFIX (untuk command text biasa) ───────────────────
   prefix: '!',
 
+  // ─── MAINTENANCE MODE ─────────────────────────────────────────
+maintenance: false, // ← ganti true untuk aktifkan, false untuk nonaktifkan
+maintenanceMessage: '🔧 **Game sedang dalam pengembangan oleh Admin.**\nMohon bersabar, kami sedang menyeimbangkan semua sistem. Akan segera dibuka kembali! 🙏',
+
   // ─── LEVEL & NAMA ROLE ───────────────────────────────────
   // Sesuaikan nama role dengan yang sudah dibuat di Discord server
   levels: [

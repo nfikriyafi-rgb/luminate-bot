@@ -41,21 +41,18 @@ module.exports = {
   async execute(message, client) {
     if (message.author.bot) return;
 
-// ─── MAINTENANCE MODE ────────────────────────────────────────
-if (config.maintenance && message.content.startsWith(config.prefix)) {
-  const args        = message.content.slice(config.prefix.length).trim().split(/\s+/);
-  const commandName = args[0]?.toLowerCase();
+    if (!message.guild) return;
 
-  // Command yang tetap bisa dipakai admin walau maintenance
+// ─── MAINTENANCE MODE ─────────────────────────────────────────
+if (config.maintenance && message.content.startsWith(config.prefix)) {
+  const cmdName = message.content.slice(config.prefix.length).trim().split(/\s+/)[0]?.toLowerCase();
   const adminBypass = new Set(['admin', 'announce']);
-  if (!adminBypass.has(commandName) || !message.member.permissions.has('Administrator')) {
+  if (!message.member.permissions.has('Administrator') || !adminBypass.has(cmdName)) {
     if (!message.member.permissions.has('Administrator')) {
       return message.reply(config.maintenanceMessage).catch(() => {});
     }
   }
 }
-
-    if (!message.guild) return;
 
     // ─── Handle prefix commands ───────────────────────────
     if (message.content.startsWith(config.prefix)) {
