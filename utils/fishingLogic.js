@@ -178,9 +178,35 @@ function rollFromPool(pool, effectiveWeight, isSecret) {
   return { fish, weight: parseFloat(finalWeight.toFixed(1)), special, failed: false, isSecret };
 }
 
+
+
+
+// ─── Give God Item (admin only) ───────────────────────────────
+function giveGodItem(userId, type) {
+  const fishing = getPlayerFishing(userId);
+
+  if (type === 'rod' || type === 'all') {
+    if (!fishing.rodInventory.includes('rod_god')) {
+      fishing.rodInventory.push('rod_god');
+    }
+  }
+
+  if (type === 'bait' || type === 'all') {
+    const existing = fishing.baitInventory.find(b => b.id === 'bait_god');
+    if (existing) {
+      existing.qty = 999;
+    } else {
+      fishing.baitInventory.push({ id: 'bait_god', qty: 999 });
+    }
+  }
+
+  savePlayerFishing(userId, fishing);
+}
+
 module.exports = {
   getPlayerFishing, savePlayerFishing,
   expForLevel, addFishingExp,
   rollFish, defaultFishing,
   checkSecretQuests,
+  giveGodItem,
 };
