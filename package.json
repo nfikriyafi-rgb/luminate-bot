@@ -1,7 +1,7 @@
 {
-  "name": "luminate-bot",
+  "name": "nexus-bot",
   "version": "1.0.0",
-  "description": "Discord leveling bot untuk server Luminate",
+  "description": "Discord leveling bot untuk server Nexus",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
