@@ -23,16 +23,16 @@ maintenanceMessage: '🔧 **Game sedang dalam pengembangan oleh Admin.**\nMohon 
   // ─── LEVEL & NAMA ROLE ───────────────────────────────────
   // Sesuaikan nama role dengan yang sudah dibuat di Discord server
   levels: [
-    { level: 1,  name: '⚡ Spark',               expRequired: 0     },
-    { level: 2,  name: '🔹 Flicker',             expRequired: 100   },
-    { level: 3,  name: '🌱 Glow',                expRequired: 200   },
-    { level: 4,  name: '💎 Shimmer',             expRequired: 400   },
-    { level: 5,  name: '🌞 Radiant',             expRequired: 800   },
-    { level: 6,  name: '🕯️ Illume',             expRequired: 1400  },
-    { level: 7,  name: '🗼 Beacon',              expRequired: 2800  },
-    { level: 8,  name: '🔥 Lightbearer',         expRequired: 5600  },
-    { level: 9,  name: '🌌 Stellar',             expRequired: 11200 },
-    { level: 10, name: '👑 Luminate Ascendant',  expRequired: 22400 },
+    { level: 1,  name: '〖🪨〗 The Newcorner',               expRequired: 0     },
+    { level: 2,  name: '〖🌱〗 The Sprout',             expRequired: 100   },
+    { level: 3,  name: '〖🔨〗 The Rookie',                expRequired: 200   },
+    { level: 4,  name: '〖⚔️〗 The Warrior',             expRequired: 400   },
+    { level: 5,  name: '〖🏹〗 Nexus Scout',             expRequired: 800   },
+    { level: 6,  name: '〖🌟〗 The Rising Star',             expRequired: 1400  },
+    { level: 7,  name: '〖🦅〗 Nexus Ranger',              expRequired: 2800  },
+    { level: 8,  name: '〖💎〗 Nexus Elite',         expRequired: 5600  },
+    { level: 9,  name: '〖🔥〗 Nexus Veteran',             expRequired: 11200 },
+    { level: 10, name: '〖🏅〗 Nexus Ascendant',  expRequired: 22400 },
   ],
 
   // ─── EXP CHAT ────────────────────────────────────────────
