@@ -32,7 +32,7 @@ maintenanceMessage: '🔧 **Game sedang dalam pengembangan oleh Admin.**\nMohon 
     { level: 7,  name: '〖🦅〗 Nexus Ranger',              expRequired: 2800  },
     { level: 8,  name: '〖💎〗 Nexus Elite',         expRequired: 5600  },
     { level: 9,  name: '〖🔥〗 Nexus Veteran',             expRequired: 11200 },
-    { level: 10, name: '〖🏅〗 Nexus Ascendant',  expRequired: 22400 },
+    { level: 10, name: '〖🏅〗 Nexus Ascendant',  expRequired: 33600 },
   ],
 
   // ─── EXP CHAT ────────────────────────────────────────────
