@@ -18,15 +18,15 @@ module.exports = {
 
     const role = member.guild.roles.cache.find(r => r.name === levelOneRole.name);
     if (!role) {
-      console.warn(`[Luminate] Role "${levelOneRole.name}" tidak ditemukan. Pastikan role sudah dibuat di server.`);
+      console.warn(`[Nexus Community] Role "${levelOneRole.name}" tidak ditemukan. Pastikan role sudah dibuat di server.`);
       return;
     }
 
     // Assign role level 1
     await member.roles.add(role).catch(err => {
-      console.error(`[Luminate] Gagal assign role ke ${member.user.tag}:`, err.message);
+      console.error(`[Nexus Community] Gagal assign role ke ${member.user.tag}:`, err.message);
     });
 
-    console.log(`[Luminate] ${member.user.tag} join → role "${levelOneRole.name}" diberikan.`);
+    console.log(`[Nexus Community] ${member.user.tag} join → role "${levelOneRole.name}" diberikan.`);
   },
 };
